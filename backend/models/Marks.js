@@ -8,6 +8,6 @@ const marksSchema = new mongoose.Schema({
   marksObtained: Number,
   totalMarks: Number,
   teacherId: mongoose.Schema.Types.ObjectId
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model("Marks", marksSchema);

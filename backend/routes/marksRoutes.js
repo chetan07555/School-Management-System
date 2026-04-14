@@ -3,6 +3,8 @@ const router = express.Router();
 const {
   addMarks,
   getMarks,
+  getMarkById,
+  updateMark,
   uploadMarks,
   getStudentMarksComparison
 } = require("../controllers/marksController");
@@ -15,5 +17,7 @@ router.post("/add", auth, role("teacher"), addMarks);
 router.post("/upload", auth, role("teacher"), uploadMarks);
 router.get("/", auth, role(["student", "teacher"]), getMarks);
 router.get("/comparison", auth, role("student"), getStudentMarksComparison);
+router.get("/:id", auth, role(["student", "teacher"]), getMarkById);
+router.put("/:id", auth, role("teacher"), updateMark);
 
 module.exports = router;

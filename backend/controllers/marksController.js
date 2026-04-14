@@ -248,3 +248,70 @@ exports.getStudentMarksComparison = async (req, res) => {
     return res.status(500).json({ msg: "Unable to fetch marks comparison", error: error.message });
   }
 };
+
+exports.getMarkById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const filter = { _id: id };
+    if (req.user.role === "teacher") {
+      filter.teacherId = req.user._id;
+    } else {
+      filter.studentId = req.user._id;
+      filter.className = canonicalClassKey(req.user.class);
+    }
+
+    const mark = await Marks.findOne(filter);
+    if (!mark) {
+      return res.status(404).json({ msg: "Marks record not found" });
+    }
+
+    return res.json(mark);
+  } catch (error) {
+    return res.status(500).json({ msg: "Unable to fetch marks record", error: error.message });
+  }
+};
+
+exports.updateMark = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { testName, marksObtained, totalMarks } = req.body;
+
+    const record = await Marks.findOne({ _id: id, teacherId: req.user._id });
+    if (!record) {
+      return res.status(404).json({ msg: "Marks record not found" });
+    }
+
+    if (typeof testName === "string" && testName.trim()) {
+      record.testName = testName.trim();
+    }
+
+    const nextTotal = totalMarks !== undefined ? Number(totalMarks) : Number(record.totalMarks);
+    const nextObtained = marksObtained !== undefined ? Number(marksObtained) : Number(record.marksObtained);
+
+    if (!Number.isFinite(nextTotal) || nextTotal <= 0) {
+      return res.status(400).json({ msg: "totalMarks must be a positive number" });
+    }
+
+    if (!Number.isFinite(nextObtained) || nextObtained < 0 || nextObtained > nextTotal) {
+      return res.status(400).json({ msg: "marksObtained must be between 0 and totalMarks" });
+    }
+
+    record.totalMarks = nextTotal;
+    record.marksObtained = nextObtained;
+    await record.save();
+
+    const io = req.app.get("io");
+    io.emit("student_data_updated", { studentId: String(record.studentId), type: "marks" });
+
+    await notifyClassStudents(
+      req,
+      record.className,
+      `Marks updated for class ${canonicalClassKey(record.className)} - ${record.subject}`
+    );
+
+    return res.json(record);
+  } catch (error) {
+    return res.status(500).json({ msg: "Unable to update marks", error: error.message });
+  }
+};

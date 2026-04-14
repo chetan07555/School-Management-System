@@ -7,6 +7,6 @@ const attendanceSchema = new mongoose.Schema({
   date: Date,
   status: String,
   markedBy: mongoose.Schema.Types.ObjectId
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model("Attendance", attendanceSchema);
