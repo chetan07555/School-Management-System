@@ -1,0 +1,1 @@
+export const toWebFileUrl = (value) => (value || '').replace(/\\/g, '/');
